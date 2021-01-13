@@ -3,6 +3,7 @@ package com.genesis.case01.controllers;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,18 +85,42 @@ public class CompanyController {
 			}
 		}
 
-		// Manual creation
+		// Validation (FUTUR)
+
+		// Manual creation - Address
+		Company NewCompany = new Company();
+
+		// Basic Data
+		{
+			NewCompany.setCompanyName(pCompany.getCompanyName());
+			NewCompany.setCompanyTva(pCompany.getCompanyTva());
+		}
 		{
 
 			// -->
 			// Main Adresse
 			Address AddressCompany = AddressService.saveAddress(pCompany.getMainAddressCompany());
-			pCompany.addAddressMain(AddressCompany);
+			NewCompany.addAddressMain(AddressCompany);
 
 			// HeadOffpCompanyice
 			Address AddressHeadOffice = AddressService.saveAddress(pCompany.getMainAddressHeadOffice());
-			pCompany.addAddressHeadOffice(AddressHeadOffice);
+			NewCompany.addAddressHeadOffice(AddressHeadOffice);
 
+		}
+
+		// Manual creation - Address
+		if ((pCompany.getAlternateAddressCompany() != null) && (pCompany.getAlternateAddressCompany().size() > 0)) {
+
+			// Adapt All Others
+			pCompany.getAlternateAddressCompany().stream().forEach(s -> {
+
+				// Validation (FUTUR)
+
+				// Creation
+				Address AddressCompany = AddressService.saveAddress(s);
+				// Link
+				NewCompany.addAddress(AddressCompany);
+			});
 		}
 
 		// Validataion
@@ -104,11 +129,11 @@ public class CompanyController {
 			throw new GenesisNotValideDataException("Data not valided - NULL");
 		}
 
-		return CompanyService.saveCompany(pCompany);
+		return CompanyService.saveCompany(NewCompany);
 	}
 
 	// PUT /object/ID Adds an Object with specified ID, Updates an Object
-	@PutMapping("/{id}")
+	@PutMapping("/{id}/update")
 	public Company updateCompany(@PathVariable Long id, @RequestBody Company CompanyToUpdate) {
 
 		// Validation
@@ -228,6 +253,56 @@ public class CompanyController {
 		// Search
 		// Contact OldValue = contactService.findContactById(id);
 
+		// Update
+		return CompanyService.saveCompany(CompanyUpdate);
+
+	}
+
+	// PUT /object/ID Adds an Object with specified ID, Updates an Object
+	@PutMapping("/{id}/address")
+	public Company addAddress(@PathVariable Long id, @RequestBody Address pAddress) {
+
+		// Validation
+		if (pAddress == null) {
+			throw new GenesisNotValideDataException("Data not valided - NULL");
+		}
+
+		// Modification
+		Company CompanyUpdate = CompanyService.findCompanyById(id);
+
+		if (CompanyUpdate == null) {
+			throw new GenesisNotValideDataException("Data not founded - NULL");
+		}
+
+		// Create New Address
+		Address AddressCompany = AddressService.saveAddress(pAddress);
+		
+		// add
+		CompanyUpdate.addAddress(AddressCompany);
+
+		// Update
+		return CompanyService.saveCompany(CompanyUpdate);
+	}
+
+	// DELETE /object/ID Deletes the object with specified ID
+	// Status: 200 OK
+	@DeleteMapping("/{id}/address/{addressid}")
+	public Company deleteContact(@PathVariable Long id, @PathVariable Long addressid) {
+
+		// Modification
+		Company CompanyUpdate = CompanyService.findCompanyById(id);
+
+		if (CompanyUpdate == null) {
+			throw new GenesisNotValideDataException("Data not founded - NULL");
+		}
+
+		// Find good address
+		boolean actionreturn = CompanyUpdate.removeAddressById(addressid );
+		
+		if (actionreturn == false) {
+			throw new GenesisNotValideDataException("Data not founded - Id Address");
+		}
+		
 		// Update
 		return CompanyService.saveCompany(CompanyUpdate);
 

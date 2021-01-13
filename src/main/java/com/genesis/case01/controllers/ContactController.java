@@ -90,6 +90,27 @@ public class ContactController {
 		// Search
 		Contact OldValue = contactService.findContactById(id);
 
+		
+		
+		if ((contact.getContactFirstName() == null) || (contact.getContactFirstName().trim().length() < 2)) {
+			throw new GenesisNotValideDataException("Data not valided - FirstName - NULL");
+		}
+
+		if ((contact.getContactLasteName() == null) || (contact.getContactLasteName().trim().length() < 2)) {
+			throw new GenesisNotValideDataException("Data not valided - LastName - NULL");
+		}
+
+		if (contact.getContactFreelance() == null) {
+			throw new GenesisNotValideDataException("Data not valided - Freelance - NULL");
+		}
+		if (contact.getContactFreelance().booleanValue() == true) {
+			// Must have a TVA
+			if ((contact.getContactTVA() == null) || (contact.getContactTVA().trim().length() < 6)) {
+				throw new GenesisNotValideDataException("Data not valided - Freelance - TVA Not Valide");
+			}
+		}
+		
+		
 		// Update
 		return contactService.saveContact(contact);
 

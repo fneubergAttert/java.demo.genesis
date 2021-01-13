@@ -25,15 +25,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "Company")
-@JsonIgnoreProperties({"hibernateLazyInitializer","handler","address"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "address" })
 public class Company implements Serializable {
 
-		private static final long serialVersionUID = -1096380431655917324L;
+	private static final long serialVersionUID = -1096380431655917324L;
 
-		
-		 
-
-		  
 	@Column(name = "CompanyId", nullable = false)
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,33 +45,29 @@ public class Company implements Serializable {
 	/**
 	 * Link to property in Contact (mappedBy)
 	 */
-	@ManyToMany(mappedBy = "companyList" ,fetch = FetchType.LAZY)
+	@ManyToMany(mappedBy = "companyList", fetch = FetchType.LAZY)
 	private List<Contact> ContactJob = new java.util.ArrayList<Contact>();
 
-	
 	/**
 	 * Link to property in Adresse (mappedBy)
 	 */
-	/* OK
-	@OneToMany(mappedBy = "company",fetch = FetchType.LAZY ,cascade = CascadeType.ALL, orphanRemoval = true)
-	*/
+	/*
+	 * OK
+	 * 
+	 * @OneToMany(mappedBy = "company",fetch = FetchType.LAZY ,cascade =
+	 * CascadeType.ALL, orphanRemoval = true)
+	 */
 	@JsonIgnore
-	@OneToMany(mappedBy = "company"
-			,fetch = FetchType.LAZY ,cascade = {
-            CascadeType.PERSIST,
-            CascadeType.MERGE
-        }, orphanRemoval = true)
+	@OneToMany(mappedBy = "company", fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST,
+			CascadeType.MERGE }, orphanRemoval = true)
 	private List<CompanyAddress> address = new ArrayList<>();
 
-	
-	@Transient 
-	private Address  mainAddressCompany = null;
+	@Transient
+	private Address mainAddressCompany = null;
 
-	@Transient 
-	private List<Address>  alternateAddressCompany = null;
+	@Transient
+	private List<Address> alternateAddressCompany = new ArrayList<Address>();
 
-	
-	
 	public List<Address> getAlternateAddressCompany() {
 		return alternateAddressCompany;
 	}
@@ -84,15 +76,14 @@ public class Company implements Serializable {
 		this.alternateAddressCompany = alternateAddressCompany;
 	}
 
-	@Transient 
-	private Address  mainAddressHeadOffice = null;
+	@Transient
+	private Address mainAddressHeadOffice = null;
 
-	
 	@PostLoad
-    private void postLoadFunction(){
+	private void postLoadFunction() {
 
-		System.out.println("postLoadFunction ");
-		
+		//System.out.println("postLoadFunction ");
+
 		// Company Address
 		List<CompanyAddress> addressFiltered0 = address //
 				.stream() //
@@ -103,8 +94,7 @@ public class Company implements Serializable {
 		if (addressFiltered0.size() > 0) {
 			mainAddressCompany = addressFiltered0.get(0).getAddress();
 		}
-		
-		
+
 		// Head Office Address
 		List<CompanyAddress> addressFiltered1 = address //
 				.stream() //
@@ -113,12 +103,12 @@ public class Company implements Serializable {
 				);
 
 		if (addressFiltered1.size() > 0) {
-			mainAddressHeadOffice =  addressFiltered1.get(0).getAddress();
+			mainAddressHeadOffice = addressFiltered1.get(0).getAddress();
 		}
-		
 
 		// AddressAlternative
-		alternateAddressCompany = new ArrayList<Address>();
+		alternateAddressCompany.clear();
+		;
 
 		address //
 				.stream() //
@@ -126,17 +116,16 @@ public class Company implements Serializable {
 				.forEach(s -> {
 					alternateAddressCompany.add(s.getAddress());
 				});
-	
-		
-    }
-	
-	
+
+	}
+
 	/**
-	 *  Head Office Address
+	 * Head Office Address
+	 * 
 	 * @return
 	 */
 	public Address getMainAddressHeadOffice() {
-		
+
 		return mainAddressHeadOffice;
 	}
 
@@ -203,118 +192,164 @@ public class Company implements Serializable {
 
 	/**
 	 * Add Additionnnal address
+	 * 
 	 * @param tag
 	 */
 	public void addAddress(Address tag) {
 		CompanyAddress postTag = new CompanyAddress(this, tag);
 		postTag.setAdressePreference(Long.valueOf(-1));
 		address.add(postTag);
-		//tag.getCompanies().add(postTag);
+
+		// Update List AddressAlternative
+		alternateAddressCompany.add(postTag.getAddress());
 	}
 
 	/**
 	 * Add Main address
+	 * 
 	 * @param tag
 	 */
 	public void addAddressMain(Address tag) {
-		
+
 		// Adapt All Others
-		address
-			.stream()
-			.filter(c -> c.getAdressePreference().intValue() == 1) // AddressCompany
-			.forEach(
-						s -> s.setAdressePreference(Long.valueOf(-1))
-					);
+		address.stream().filter(c -> c.getAdressePreference().intValue() == 1) // AddressCompany
+				.forEach(s -> s.setAdressePreference(Long.valueOf(-1)));
 
 		// AddNew Address
 		CompanyAddress postTag = new CompanyAddress(this, tag);
 		postTag.setAdressePreference(Long.valueOf(1));
 		address.add(postTag);
-		
+
+		// Update
+		mainAddressCompany = postTag.getAddress();
 	}
 
 	/**
-	 * Add Main address
+	 * Update :: Main address (Old address pass in alternantive list)
+	 * 
 	 * @param tag
 	 */
 	public void setAddressMain(Address tag) {
-		
+
 		// Adapt All Others
-		address
-			.stream()
-			.filter(c -> c.getAdressePreference().intValue() == 1) // AddressCompany
-			.forEach(
-						s -> s.setAdressePreference(Long.valueOf(-1))
-					);
+		address.stream().filter(c -> c.getAdressePreference().intValue() == 1) // AddressCompany
+				.forEach(s -> s.setAdressePreference(Long.valueOf(-1)));
 
 		// AddNew Address
 		CompanyAddress postTag = new CompanyAddress(this, tag);
 		postTag.setAdressePreference(Long.valueOf(1));
 		address.add(postTag);
-		
+
+		// Update
+		mainAddressHeadOffice = postTag.getAddress();
+
+		// Update List AddressAlternative
+		//
+		alternateAddressCompany.clear();
+
+		address //
+				.stream() //
+				.filter(c -> c.getAdressePreference().intValue() < 0) // AddressAlternative
+				.forEach(s -> {
+					alternateAddressCompany.add(s.getAddress());
+				});
+
 	}
-	
-	
-	
+
 	/**
-	 * Add  Head Office Address
+	 * Add Head Office Address
+	 * 
 	 * @param tag
 	 */
 	public void addAddressHeadOffice(Address tag) {
-		
+
 		// Adapt All Others
-		address
-			.stream()
-			.filter(c -> c.getAdressePreference().intValue() == 2) // mainAddressHeadOffice
-			.forEach(
-					
-						s -> s.setAdressePreference(Long.valueOf(-1))
-					);
+		address.stream().filter(c -> c.getAdressePreference().intValue() == 2) // mainAddressHeadOffice
+				.forEach(
+
+						s -> s.setAdressePreference(Long.valueOf(-1)));
 
 		// AddNew Address
 		CompanyAddress postTag = new CompanyAddress(this, tag);
 		postTag.setAdressePreference(Long.valueOf(2));
 		address.add(postTag);
 
+		// Update
+		mainAddressHeadOffice = postTag.getAddress();
 	}
-	
-	
+
 	/**
-	 * Add  Head Office Address
+	 * Update :: Head Office Address Main address (Old address pass in alternantive
+	 * list)
+	 * 
 	 * @param tag
 	 */
 	public void setAddressHeadOffice(Address tag) {
-		
+
 		// Adapt All Others
-		address
-			.stream()
-			.filter(c -> c.getAdressePreference().intValue() == 2) // mainAddressHeadOffice
-			.forEach(
-					
-						s -> s.setAdressePreference(Long.valueOf(-1))
-					);
+		address.stream().filter(c -> c.getAdressePreference().intValue() == 2) // mainAddressHeadOffice
+				.forEach(
+
+						s -> s.setAdressePreference(Long.valueOf(-1)));
 
 		// AddNew Address
 		CompanyAddress postTag = new CompanyAddress(this, tag);
 		postTag.setAdressePreference(Long.valueOf(2));
 		address.add(postTag);
 
-	}
-	
-	
-	
-	public void removeAddress(Address tag) {
-		for (Iterator<CompanyAddress> iterator = address.iterator(); iterator.hasNext();) {
-			CompanyAddress pCompanyAddress = iterator.next();
+		// Update
+		mainAddressHeadOffice = postTag.getAddress();
 
-			if (pCompanyAddress.getAddress().equals(this) && pCompanyAddress.getAddress().equals(tag)) {
-				iterator.remove();
-				//pCompanyAddress.getAddress().getCompanies().remove(pCompanyAddress);
-				pCompanyAddress.setAddress(null);
-				pCompanyAddress.setCompany(null);
-			}
-		}
+		// Update List AddressAlternative
+		//
+		alternateAddressCompany.clear();
+		address //
+				.stream() //
+				.filter(c -> c.getAdressePreference().intValue() < 0) // AddressAlternative
+				.forEach(s -> {
+					alternateAddressCompany.add(s.getAddress());
+				});
+
 	}
+
+	/**
+	 * 
+	 * @param AddressId Id of address
+	 */
+	public boolean removeAddressById(Long AddressId) {
+
+		// Update List AddressAlternative
+		//
+
+		List<CompanyAddress> addressListToKill = address //
+				.stream() //
+				.filter(c -> c.getAddress().getAdresseId().longValue() == AddressId.longValue()) //
+				.collect(Collectors.toList()//
+				);
+
+		if ((addressListToKill != null) && addressListToKill.size() > 0) {
+
+			address.remove(addressListToKill.get(0));
+			
+
+			// Update List AddressAlternative
+			//
+			alternateAddressCompany.clear();
+
+			address //
+					.stream() //
+					.filter(c -> c.getAdressePreference().intValue() < 0) // AddressAlternative
+					.forEach(s -> {
+						alternateAddressCompany.add(s.getAddress());
+					});
+			
+			return true;
+		}
+
+		return false;
+	}
+
+
 
 	public String toString() {
 		return String.valueOf(getCompanyId());
